@@ -72,11 +72,14 @@ trait MillMDocModule extends ScalaModule with PublishModule {
   override def pomSettings = T {
     PomSettings(
       description = "Mill module to execute Scalameta MDoc",
-      organization = "de.wayofquality.blended",
-      url = "https://github.com/atooni/mill-mdoc",
+      organization = "com.yoohaemin",
+      url = "https://github.com/yoohaemin/mill-mdoc",
       licenses = Seq(License.`Apache-2.0`),
-      versionControl = VersionControl.github("atooni", "mill-mdoc"),
-      developers = Seq(Developer("atooni", "Andreas Gies", "https://github.com/atooni"))
+      versionControl = VersionControl.github("yoohaemin", "mill-mdoc"),
+      developers = Seq(
+        Developer("atooni", "Andreas Gies", "https://github.com/atooni"),
+        Developer("yoohaemin", "Haemin Yoo", "https://github.com/yoohaemin")
+      )
     )
   }
 }
