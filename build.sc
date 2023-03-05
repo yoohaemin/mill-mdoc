@@ -1,7 +1,7 @@
 // mill plugins
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.2-5-dfb170`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.3.0`
 // Run integration tests with mill
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.4.1-26-70d7c9`
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.1`
 // Generate converage reports
 import $ivy.`com.lihaoyi::mill-contrib-scoverage:`
 
