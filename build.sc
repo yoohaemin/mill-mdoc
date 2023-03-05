@@ -96,7 +96,7 @@ trait MillMDocModule extends ScalaModule with CiReleaseModule {
 object core extends Cross[Core](millPlatforms.map(_._1): _*)
 class Core(override val millPlatform: String) extends MillMDocModule with ScoverageModule {
   override def millSourcePath: Path = super.millSourcePath / os.up
-  override def artifactName = "de.wayofquality.blended.mill.mdoc"
+  override def artifactName = "mill-mdoc"
   override def compileIvyDeps = Agg(
     deps.millMain,
     deps.millScalalib
