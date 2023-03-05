@@ -4,10 +4,12 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.3.0`
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.1`
 // Generate converage reports
 import $ivy.`com.lihaoyi::mill-contrib-scoverage:`
+import $ivy.`io.chris-kipp::mill-ci-release::0.1.5`
 
 import mill.define.{Command, Task, TaskModule}
 
 import java.nio.file.attribute.PosixFilePermission
+import io.kipp.mill.ci.release._
 
 import de.tobiasroeser.mill.integrationtest._
 import de.tobiasroeser.mill.vcs.version._
@@ -67,13 +69,12 @@ object Deps_0_9 extends Deps {
 /** Cross build versions */
 val millPlatforms = Seq(Deps_0_11, Deps_0_10, Deps_0_9).map(x => x.millPlatform -> x)
 
-trait MillMDocModule extends ScalaModule with PublishModule {
+trait MillMDocModule extends ScalaModule with CiReleaseModule {
   def millPlatform: String
   def deps: Deps = millPlatforms.toMap.apply(millPlatform)
   override def scalaVersion = T { deps.scalaVersion }
   override def ivyDeps = Agg(deps.scalaLibrary)
   override def artifactSuffix = s"_mill${deps.millPlatform}_${artifactScalaVersion()}"
-  def publishVersion = VcsVersion.vcsState().format()
   override def javacOptions = Seq("-source", "1.8", "-target", "1.8", "-encoding", "UTF-8")
   override def scalacOptions = Seq("-target:jvm-1.8", "-encoding", "UTF-8")
   override def pomSettings = T {
@@ -89,6 +90,7 @@ trait MillMDocModule extends ScalaModule with PublishModule {
       )
     )
   }
+  override def sonatypeHost = Some(SonatypeHost.s01)
 }
 
 object core extends Cross[Core](millPlatforms.map(_._1): _*)
