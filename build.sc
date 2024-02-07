@@ -31,7 +31,7 @@ trait Deps {
   def millPlatform: String
   def scalaVersion: String
   def millTestVersions: Seq[String]
-  val scoverageVersion = "2.0.8"
+  val scoverageVersion = "2.0.11"
 
   val bndlib = ivy"biz.aQute.bnd:biz.aQute.bndlib:6.0.0"
   val logbackClassic = ivy"ch.qos.logback:logback-classic:1.1.3"
@@ -45,9 +45,9 @@ trait Deps {
 }
 
 object Deps_0_11 extends Deps {
-  override val millVersion = "0.11.0-M4" // scala-steward:off
-  override def millPlatform = "0.11.0-M4"
-  override val scalaVersion = "2.13.7"
+  override val millVersion = "0.11.7" // scala-steward:off
+  override def millPlatform = "0.11.7"
+  override val scalaVersion = "2.13.12"
   // keep in sync with .github/workflows/build.yml
   override val millTestVersions = Seq(millVersion)
 }
@@ -58,16 +58,9 @@ object Deps_0_10 extends Deps {
   // keep in sync with .github/workflows/build.yml
   override val millTestVersions = Seq(millVersion)
 }
-object Deps_0_9 extends Deps {
-  override val millVersion = "0.9.8" // scala-steward:off
-  override def millPlatform = "0.9"
-  override val scalaVersion = "2.13.7"
-  // keep in sync with .github/workflows/build.yml
-  override val millTestVersions = Seq("0.9.10", "0.9.9", millVersion)
-}
 
 /** Cross build versions */
-val millPlatforms = Seq(Deps_0_11, Deps_0_10, Deps_0_9).map(x => x.millPlatform -> x)
+val millPlatforms = Seq(Deps_0_11, Deps_0_10).map(x => x.millPlatform -> x)
 
 trait MillMDocModule extends ScalaModule with CiReleaseModule {
   def millPlatform: String
