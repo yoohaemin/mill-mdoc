@@ -144,7 +144,7 @@ trait TestSupport extends MillMDocModule with Cross.Module[String] {
 
 val testVersions: Seq[(String, Deps)] = millPlatforms.flatMap { case (_, d) => d.millTestVersions.map(_ -> d) }
 
-object itest extends Cross[ItestCross](mill_0_10, mill_0_11) with TaskModule {
+object itest extends Cross[ItestCross](mill_0_10_version, mill_0_11_version) with TaskModule {
   override def defaultCommandName(): String = "test"
   def testCached: T[Seq[TestCase]] = itest(testVersions.map(_._1).head).testCached
   def test(args: String*): Command[Seq[TestCase]] = itest(testVersions.map(_._1).head).test(args: _*)
