@@ -6,24 +6,29 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
 import $ivy.`com.lihaoyi::mill-contrib-scoverage:`
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
 
-import mill.define.{Command, Task, TaskModule}
+import mill.define.{Command, TaskModule}
 
-import java.nio.file.attribute.PosixFilePermission
 import io.kipp.mill.ci.release._
 
 import de.tobiasroeser.mill.integrationtest._
-import de.tobiasroeser.mill.vcs.version._
 
-import mill.{Agg, PathRef, T}
+import mill._
 import mill.contrib.scoverage.ScoverageModule
-import mill.define.{Cross, Module, Target}
-import mill.modules.Util
+import mill.define.{Cross, Target}
 import mill.scalalib._
 import mill.scalalib.publish._
 
 import os.Path
 
-val baseDir = build.millSourcePath
+val mill_0_10 = "0.10"
+val mill_0_10_version = "0.10.15" // scala-steward:off
+val mill_0_11 = "0.11"
+val mill_0_11_version = "0.11.7"  // scala-steward:off
+
+lazy val millVersions = Map(
+  mill_0_10 -> mill_0_10_version,
+  mill_0_11 -> mill_0_11_version
+)
 
 trait Deps {
   // The mill API version used in the project/sources/dependencies, also default for integration tests
@@ -45,16 +50,16 @@ trait Deps {
 }
 
 object Deps_0_11 extends Deps {
-  override val millVersion = "0.11.7" // scala-steward:off
-  override def millPlatform = "0.11.7"
+  override val millVersion =  mill_0_11_version
+  override def millPlatform = mill_0_11
   override val scalaVersion = "2.13.12"
   // keep in sync with .github/workflows/build.yml
   override val millTestVersions = Seq(millVersion)
 }
 object Deps_0_10 extends Deps {
-  override val millVersion = "0.10.0" // scala-steward:off
-  override def millPlatform = "0.10"
-  override val scalaVersion = "2.13.7"
+  override val millVersion = mill_0_10_version
+  override def millPlatform = mill_0_10
+  override val scalaVersion = "2.13.12"
   // keep in sync with .github/workflows/build.yml
   override val millTestVersions = Seq(millVersion)
 }
@@ -86,8 +91,9 @@ trait MillMDocModule extends ScalaModule with CiReleaseModule {
   override def sonatypeHost = Some(SonatypeHost.s01)
 }
 
-object core extends Cross[Core](millPlatforms.map(_._1): _*)
-class Core(override val millPlatform: String) extends MillMDocModule with ScoverageModule {
+object core extends Cross[Core](mill_0_10, mill_0_11)
+trait Core extends MillMDocModule with ScoverageModule with Cross.Module[String] {
+  override def millPlatform: String = crossValue
   override def millSourcePath: Path = super.millSourcePath / os.up
   override def artifactName = "mill-mdoc"
   override def compileIvyDeps = Agg(
@@ -112,8 +118,8 @@ class Core(override val millPlatform: String) extends MillMDocModule with Scover
 
   override def scoverageVersion = deps.scoverageVersion
   // we need to adapt to changed publishing policy - patch-level
-  override def scoveragePluginDep = T {
-    deps.scoveragePlugin
+  override def scoveragePluginDeps = T {
+    Agg(deps.scoveragePlugin)
   }
 
   object test extends ScoverageTests with TestModule.ScalaTest {
@@ -121,11 +127,12 @@ class Core(override val millPlatform: String) extends MillMDocModule with Scover
       deps.scalaTest
     )
   }
-
 }
 
-object testsupport extends Cross[TestSupport](millPlatforms.map(_._1): _*)
-class TestSupport(override val millPlatform: String) extends MillMDocModule {
+object testsupport extends Cross[TestSupport](mill_0_10, mill_0_11)
+trait TestSupport extends MillMDocModule with Cross.Module[String] {
+  def millVersion: String = millVersions(millPlatform)
+  override val millPlatform: String = crossValue
   override def millSourcePath: Path = super.millSourcePath / os.up
   override def compileIvyDeps = Agg(
     deps.millMain,
@@ -137,19 +144,21 @@ class TestSupport(override val millPlatform: String) extends MillMDocModule {
 
 val testVersions: Seq[(String, Deps)] = millPlatforms.flatMap { case (_, d) => d.millTestVersions.map(_ -> d) }
 
-object itest extends Cross[ItestCross](testVersions.map(_._1): _*) with TaskModule {
+object itest extends Cross[ItestCross](mill_0_10, mill_0_11) with TaskModule {
   override def defaultCommandName(): String = "test"
   def testCached: T[Seq[TestCase]] = itest(testVersions.map(_._1).head).testCached
   def test(args: String*): Command[Seq[TestCase]] = itest(testVersions.map(_._1).head).test(args: _*)
 }
 
-class ItestCross(millVersion: String) extends MillIntegrationTestModule {
+trait ItestCross extends MillIntegrationTestModule with Cross.Module[String]{
+  def millVersion = millVersions(millPlatform)
+  def millPlatform: String = crossValue
   override def millSourcePath: Path = super.millSourcePath / os.up
   def deps = testVersions.toMap.apply(millVersion)
   override def millTestVersion = T { millVersion }
   override def pluginsUnderTest = Seq(core(deps.millPlatform), testsupport(deps.millPlatform))
 
-  override def pluginUnderTestDetails: Task.Sequence[(PathRef, (PathRef, (PathRef, (PathRef, (PathRef, Artifact)))))] =
+  override def pluginUnderTestDetails =
     T.traverse(pluginsUnderTest) { p =>
       val jar = p match {
         case p: ScoverageModule => p.scoverage.jar
@@ -167,25 +176,4 @@ class ItestCross(millVersion: String) extends MillIntegrationTestModule {
     )
     PathRef(T.dest)
   }
-}
-
-/** Convenience targets. */
-object P extends Module {
-
-  /**
-   * Update the millw script.
-   */
-  def millw() = T.command {
-    // https://raw.githubusercontent.com/lefou/millw/master/millw
-    for {
-      file <- Seq("millw", "millw.bat")
-    } yield {
-      val target = Util.download(s"https://raw.githubusercontent.com/lefou/millw/master/${file}")
-      val millw = baseDir / file
-      os.copy.over(target.path, millw)
-      os.perms.set(millw, os.perms(millw) + PosixFilePermission.OWNER_EXECUTE)
-      target
-    }
-  }
-
 }
