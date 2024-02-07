@@ -94,7 +94,6 @@ trait MillMDocModule extends ScalaModule with CiReleaseModule {
 object core extends Cross[Core](mill_0_10, mill_0_11)
 trait Core extends MillMDocModule with ScoverageModule with Cross.Module[String] {
   override def millPlatform: String = crossValue
-  override def millSourcePath: Path = super.millSourcePath / os.up
   override def artifactName = "mill-mdoc"
   override def compileIvyDeps = Agg(
     deps.millMain,
